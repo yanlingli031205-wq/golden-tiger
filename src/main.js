@@ -1,4 +1,3 @@
-﻿// 1. 引入样式 (关键修复！)
 import './style.css'; 
 
 import * as THREE from 'three';
@@ -9,7 +8,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import gsap from 'gsap';
 
 // ==========================================
-// 1. 核心 Shader 动画 (保持不变)
+// 1. 核心 Shader 动画
 // ==========================================
 const globalUniforms = { uExpansion: { value: 0.0 } };
 
@@ -60,10 +59,10 @@ function fillAttributes(geometry, count, getDirFunc, getSpeedFunc) {
 }
 
 // ==========================================
-// 2. 场景与灯光 (恢复高级感设置)
+// 2. 场景与灯光
 // ==========================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#030504'); // 经典深绿黑
+scene.background = new THREE.Color('#030504');
 scene.fog = new THREE.FogExp2('#030504', 0.02);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -73,12 +72,11 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "h
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2; // 亮度恢复正常
+renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.getElementById('app').appendChild(renderer.domElement);
 
-// 灯光 (恢复明亮温馨的设置)
 const ambientLight = new THREE.AmbientLight('#112211', 0.6);
 scene.add(ambientLight);
 
@@ -97,14 +95,14 @@ treeGroup.position.y = -4.5;
 scene.add(treeGroup);
 
 // ==========================================
-// 3. 资产生成 (恢复珍珠版材质)
+// 3. 资产生成
 // ==========================================
 
-// A. 柔光五角星 (Star)
+// A. 柔光五角星
 const starShape = new THREE.Shape();
 const points = 5;
 for (let i = 0; i < points * 2; i++) {
-    const r = (i % 2 === 0) ? 0.8 : 0.4; // 胖一点
+    const r = (i % 2 === 0) ? 0.8 : 0.4;
     const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
     const x = Math.cos(a) * r; const y = Math.sin(a) * r;
     if (i === 0) starShape.moveTo(x, y); else starShape.lineTo(x, y);
@@ -115,13 +113,13 @@ starGeo.center();
 const starMat = new THREE.MeshStandardMaterial({
     color: '#FFFDEE', 
     emissive: '#FFCC66', 
-    emissiveIntensity: 0.8, // 恢复高亮度
+    emissiveIntensity: 0.8, 
     roughness: 0.4, 
     metalness: 0.6
 });
 const topStar = new THREE.Mesh(starGeo, starMat);
 topStar.position.y = 11.2;
-topStar.name = "MagicStar"; // 射线检测用
+topStar.name = "MagicStar";
 treeGroup.add(topStar);
 
 // B. 祖母绿针叶
@@ -147,7 +145,7 @@ for (let i = 0; i < NEEDLE_COUNT; i++) {
 }
 fillAttributes(needleGeo, NEEDLE_COUNT, (i,v)=>v.set(needleDirs[i].x, needleDirs[i].y*0.1, needleDirs[i].z).normalize(), ()=>Math.random()*0.5+0.2);
 
-// C. 柔光奶油珍珠 (恢复！)
+// C. 柔光奶油珍珠
 const PEARL_COUNT = 700;
 const pearlGeo = new THREE.SphereGeometry(0.12, 32, 32);
 const pearlMat = new THREE.MeshStandardMaterial({
@@ -190,7 +188,7 @@ for(let i=0; i<RIBBON_COUNT; i++) {
 fillAttributes(ribbonGeo, RIBBON_COUNT, (i,v)=>v.set(ribbonDirs[i].x, 0, ribbonDirs[i].z).normalize(), ()=>Math.random()*0.5+0.8);
 
 // ==========================================
-// 4. 文字粒子系统 (Wish Particles)
+// 4. 文字粒子系统
 // ==========================================
 let wishParticles = null;
 function createWishParticles(text) {
@@ -201,7 +199,7 @@ function createWishParticles(text) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 512; canvas.height = 128;
-    ctx.font = 'bold 80px "Cinzel", serif'; // 用 Cinzel 字体
+    ctx.font = 'bold 80px "Cinzel", serif'; 
     ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(text, 256, 64);
     const imgData = ctx.getImageData(0,0,512,128).data;
@@ -211,14 +209,14 @@ function createWishParticles(text) {
             if(imgData[(y*512 + x)*4] > 128) {
                 const u = (x / 512 - 0.5) * 8; 
                 const v = (1 - y / 128) * 2 + 5; 
-                particles.push({x: u, y: v, z: 3.5}); // 浮在树前面
+                particles.push({x: u, y: v, z: 3.5}); 
             }
         }
     }
     const pCount = particles.length;
     const pGeo = new THREE.OctahedronGeometry(0.03, 0);
     const pMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, blending: THREE.AdditiveBlending });
-    setupExplosionMaterial(pMat); // 注入爆炸
+    setupExplosionMaterial(pMat); 
     wishParticles = new THREE.InstancedMesh(pGeo, pMat, pCount);
     treeGroup.add(wishParticles);
     const dummyP = new THREE.Object3D();
@@ -227,12 +225,10 @@ function createWishParticles(text) {
         dummyP.position.set(particles[i].x, particles[i].y, particles[i].z);
         dummyP.rotation.set(Math.random(),Math.random(),Math.random());
         dummyP.updateMatrix(); wishParticles.setMatrixAt(i, dummyP.matrix);
-        pDirs.push(Math.random()-0.5, Math.random()-0.5, 1.0); // 向前炸
+        pDirs.push(Math.random()-0.5, Math.random()-0.5, 1.0); 
         pSpeeds.push(Math.random()*2 + 1);
     }
     fillAttributes(wishParticles.geometry, pCount, (i,v)=>v.set(pDirs[i*3], pDirs[i*3+1], pDirs[i*3+2]).normalize(), (i)=>pSpeeds[i]);
-    
-    // 生成特效：文字闪烁一下
     gsap.from(wishParticles.material, { opacity: 0, duration: 1 });
 }
 
@@ -249,5 +245,80 @@ let isModalOpen = false;
 
 window.addEventListener('pointerdown', (event) => {
     if (isModalOpen) return;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(topStar);
+    if (intersects.length > 0) {
+        openModal();
+    } else {
+        gsap.to(bloomPass, { strength: 1.5, duration: 0.2, yoyo: true, repeat: 1 });
+        gsap.to(mainLight, { intensity: 4.0, duration: 0.2, yoyo: true, repeat: 1 });
+    }
+});
 
-    // 点
+function openModal() {
+    isModalOpen = true;
+    modal.classList.add('visible');
+    modal.classList.remove('hidden');
+    input.focus();
+    gsap.to(introText, { opacity: 0, duration: 0.5 });
+}
+
+function closeModal() {
+    isModalOpen = false;
+    modal.classList.remove('visible');
+    setTimeout(() => modal.classList.add('hidden'), 500);
+    gsap.to(introText, { opacity: 1, duration: 1.0 });
+}
+
+document.getElementById('wish-submit').addEventListener('click', () => {
+    const text = input.value.trim();
+    if (text) {
+        createWishParticles(text);
+        closeModal();
+        input.value = '';
+    }
+});
+document.getElementById('close-modal').addEventListener('click', closeModal);
+
+// ==========================================
+// 6. 渲染循环
+// ==========================================
+const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.85);
+const composer = new EffectComposer(renderer);
+composer.addPass(renderScene);
+composer.addPass(bloomPass);
+
+let targetExpansion = 0;
+let currentExpansion = 0;
+window.addEventListener('wheel', (e) => {
+    targetExpansion += e.deltaY * 0.002;
+    targetExpansion = Math.max(0, Math.min(targetExpansion, 5.0));
+});
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.enableZoom = false; controls.autoRotate = true; controls.autoRotateSpeed = 0.5; controls.maxPolarAngle = Math.PI / 1.8;
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
+    currentExpansion += (targetExpansion - currentExpansion) * 0.05;
+    globalUniforms.uExpansion.value = currentExpansion;
+
+    treeGroup.rotation.y = time * 0.1;
+    topStar.rotation.y = -time * 0.5;
+    topStar.position.y = 11.2 + Math.sin(time*2)*0.15 + currentExpansion*2.5;
+
+    controls.update();
+    composer.render();
+}
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+});
+animate();
