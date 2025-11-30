@@ -1,4 +1,7 @@
-﻿:root {
+﻿/* 引入谷歌字体 */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital@0;1&display=swap');
+
+:root {
   --gold: #FFD700;
   --gold-dim: #AA8844;
   --bg: #030504;
@@ -9,14 +12,13 @@ body {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden; /* 【关键】禁止出现滚动条 */
+  overflow: hidden; /* 禁止滚动 */
   background-color: var(--bg);
   font-family: 'Cinzel', serif;
-  user-select: none; /* 防止双击选中文本 */
 }
 
 #app {
-  position: absolute;
+  position: fixed; /* 固定在背后 */
   top: 0;
   left: 0;
   width: 100%;
@@ -24,54 +26,59 @@ body {
   z-index: 1;
 }
 
-/* 电影感开场字幕 */
+/* --- 1. 电影感开场字幕 --- */
 #intro-text {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  z-index: 2;
-  pointer-events: none; /* 鼠标穿透 */
-  transition: opacity 1.5s ease;
+  z-index: 10; /* 保证在树上面 */
+  pointer-events: none; /* 让鼠标能穿透文字点到树 */
+  width: 100%;
 }
 
 .gold-text {
   font-size: min(4rem, 8vw);
   margin: 0;
-  background: linear-gradient(to bottom, #fff 0%, #FFD700 50%, #886622 100%);
+  /* 奢华流金渐变 */
+  background: linear-gradient(to bottom, #fff8cc 0%, #FFD700 40%, #b8860b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+  
   opacity: 0;
-  animation: fadeInUp 2s ease forwards 0.5s;
+  animation: fadeUpIn 3s ease forwards 0.5s; /* 慢慢浮现 */
 }
 
 .sub-text {
   font-family: 'Playfair Display', serif;
   color: #889988;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.5em; /* 宽字间距 = 高级感 */
   font-size: min(1rem, 3vw);
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  text-transform: uppercase;
+  
   opacity: 0;
-  animation: fadeInUp 2s ease forwards 1.5s;
+  animation: fadeUpIn 3s ease forwards 1.5s;
 }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes fadeUpIn {
+  from { opacity: 0; transform: translateY(30px); filter: blur(10px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-/* 许愿弹窗 (玻璃拟态) */
+/* --- 2. 许愿弹窗 (玻璃拟态) --- */
 #wish-modal {
-  position: absolute;
+  position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  z-index: 10;
+  background: rgba(0, 0, 0, 0.4); /* 稍微暗一点的背景 */
+  backdrop-filter: blur(8px); /* 磨砂玻璃效果 */
+  z-index: 100;
   display: flex;
   justify-content: center;
   align-items: center;
+  
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease;
@@ -83,15 +90,13 @@ body {
 }
 
 .modal-content {
-  background: rgba(10, 20, 15, 0.8);
-  border: 1px solid var(--gold-dim);
-  padding: 3rem;
+  background: rgba(20, 25, 20, 0.85); /* 深绿黑底色 */
+  border: 1px solid rgba(255, 215, 0, 0.3); /* 金色细边框 */
+  padding: 4rem;
   text-align: center;
-  border-radius: 4px;
-  box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255, 215, 0, 0.1);
-  position: relative;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
   transform: scale(0.9);
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #wish-modal.visible .modal-content {
@@ -100,64 +105,13 @@ body {
 
 .modal-title {
   color: var(--gold);
+  font-size: 2rem;
   margin-bottom: 2rem;
-  font-weight: normal;
   letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255,215,0,0.3);
 }
 
 #wish-input {
   background: transparent;
   border: none;
-  border-bottom: 1px solid #555;
-  color: #fff;
-  font-family: 'Playfair Display', serif;
-  font-size: 1.5rem;
-  text-align: center;
-  width: 300px;
-  padding: 10px;
-  outline: none;
-  transition: border-color 0.3s;
-}
-
-#wish-input:focus {
-  border-bottom: 1px solid var(--gold);
-}
-
-#wish-submit {
-  margin-top: 2rem;
-  background: transparent;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  padding: 10px 30px;
-  font-family: 'Cinzel', serif;
-  cursor: pointer;
-  transition: all 0.3s;
-  letter-spacing: 1px;
-}
-
-#wish-submit:hover {
-  background: var(--gold);
-  color: #000;
-  box-shadow: 0 0 15px var(--gold);
-}
-
-.modal-hint {
-  margin-top: 1rem;
-  font-size: 0.8rem;
-  color: #666;
-  font-style: italic;
-}
-
-#close-modal {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  color: #555;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-#close-modal:hover { color: #fff; }
-
-.hidden { display: none !important; }
+  border-bottom:
