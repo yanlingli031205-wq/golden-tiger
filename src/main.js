@@ -7,7 +7,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import gsap from 'gsap';
 
 // ==========================================
-// 1. 核心 Shader (保持滚轮爆炸功能)
+// 1. 核心 Shader (爆炸效果保持)
 // ==========================================
 const globalUniforms = { uExpansion: { value: 0.0 } };
 
@@ -58,44 +58,43 @@ function fillAttributes(geometry, count, getDirFunc, getSpeedFunc) {
 }
 
 // ==========================================
-// 2. 场景与灯光
+// 2. 场景与高燃灯光
 // ==========================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#050505'); // 纯黑背景
-scene.fog = new THREE.FogExp2('#050505', 0.03);
+scene.background = new THREE.Color('#020000'); // 近似纯黑
+scene.fog = new THREE.FogExp2('#020000', 0.02);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 2, 18); // 稍微抬高视角
+camera.position.set(0, 2, 22);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 1.2;
 document.getElementById('app').appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight('#222222', 1.0);
+// 灯光配置：烈火色调
+const ambientLight = new THREE.AmbientLight('#331111', 1.0); // 暗红环境光
 scene.add(ambientLight);
-
-const mainLight = new THREE.DirectionalLight('#FFD700', 3.0);
+const mainLight = new THREE.DirectionalLight('#FFaa00', 3.0); // 金色主光
 mainLight.position.set(5, 5, 10);
 scene.add(mainLight);
-
-const rimLight = new THREE.SpotLight('#44aaff', 5.0);
-rimLight.position.set(-10, 5, -5);
-scene.add(rimLight);
+const fireLight = new THREE.PointLight('#FF4500', 5.0, 20); // 底部火光
+fireLight.position.set(0, -5, 5);
+scene.add(fireLight);
 
 // ==========================================
-// 3. 构建粒子猛虎 (Procedural Particle Tiger)
+// 3. 粒子猛虎 (Tiger) - 放在左侧
 // ==========================================
 const tigerGroup = new THREE.Group();
-tigerGroup.position.x = -4.0; // 【关键】老虎在左边奔跑
+tigerGroup.position.set(-6, -2, 0); // 放在左下侧奔跑
+tigerGroup.rotation.y = 0.4; // 稍微侧身朝向屏幕中心
 scene.add(tigerGroup);
 
-// 通用材质
 const goldMat = new THREE.MeshStandardMaterial({ 
-    color: '#FFD700', roughness: 0.2, metalness: 1.0, 
-    emissive: '#AA6600', emissiveIntensity: 0.2 
+    color: '#FFD700', roughness: 0.1, metalness: 1.0, 
+    emissive: '#AA4400', emissiveIntensity: 0.4 
 });
 setupExplosionMaterial(goldMat);
 
@@ -104,33 +103,21 @@ const blackMat = new THREE.MeshStandardMaterial({
 });
 setupExplosionMaterial(blackMat);
 
-// 辅助：创建一个装满粒子的形状
-function createParticleShape(geometry, count, material, scaleMult=1) {
-    const mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.05 * scaleMult, 0), material, count);
+// 通用粒子生成器
+function createParticleShape(count, material, scaleMult=1) {
+    const mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.06 * scaleMult, 0), material, count);
     const dummy = new THREE.Object3D();
     const dirs = []; const speeds = [];
-    
-    // 在几何体表面/内部随机采样点
-    // 这里简化：用包围盒范围内的随机点，然后判断是否在几何体内
-    // 为了性能，我们直接用基础形状的数学公式分布
-    
     for(let i=0; i<count; i++) {
-        // 简单的立方体分布，靠 geometry 的形状决定最终位置不太容易
-        // 我们直接把粒子挂载在 Group 下，形状由外部 Group 的缩放决定
         const x = (Math.random()-0.5);
         const y = (Math.random()-0.5);
         const z = (Math.random()-0.5);
-        
-        // 简单的球形过滤，让粒子聚集成团
         if (x*x + y*y + z*z > 0.25) { i--; continue; } 
-
-        dummy.position.set(x*2, y*2, z*2); // 归一化到 -0.5 ~ 0.5
+        dummy.position.set(x*2, y*2, z*2);
         dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-        const s = Math.random() * 0.5 + 0.5;
-        dummy.scale.set(s,s,s);
+        dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
-        
         dirs.push(x, y, z);
         speeds.push(Math.random() + 0.5);
     }
@@ -138,146 +125,162 @@ function createParticleShape(geometry, count, material, scaleMult=1) {
     return mesh;
 }
 
-// --- 身体部件 (Body Parts) ---
+// 老虎部件
 const bodyGroup = new THREE.Group();
 tigerGroup.add(bodyGroup);
-// 身体：长条形的金色粒子云
-const bodyMesh = createParticleShape(null, 2000, goldMat);
-bodyMesh.scale.set(4, 1.5, 1.5); // 拉长
-bodyGroup.add(bodyMesh);
-// 条纹：少量的黑色粒子
-const stripeMesh = createParticleShape(null, 500, blackMat);
-stripeMesh.scale.set(4.1, 1.55, 1.55);
-bodyGroup.add(stripeMesh);
+const bodyMesh = createParticleShape(2500, goldMat); bodyMesh.scale.set(4, 1.5, 1.5); bodyGroup.add(bodyMesh);
+const stripeMesh = createParticleShape(600, blackMat); stripeMesh.scale.set(4.1, 1.55, 1.55); bodyGroup.add(stripeMesh);
 
+const headGroup = new THREE.Group(); headGroup.position.set(2.2, 0.8, 0); bodyGroup.add(headGroup);
+const headMesh = createParticleShape(1000, goldMat); headMesh.scale.set(1.3, 1.3, 1.3); headGroup.add(headMesh);
+const headHitbox = new THREE.Mesh(new THREE.SphereGeometry(1.0), new THREE.MeshBasicMaterial({visible:false}));
+headHitbox.name = "TigerHead"; headGroup.add(headHitbox);
 
-// --- 头部 (Head) - 关键交互点 ---
-const headGroup = new THREE.Group();
-headGroup.position.set(2.2, 0.8, 0); // 身体前方
-bodyGroup.add(headGroup);
-
-// 头主体
-const headMesh = createParticleShape(null, 800, goldMat);
-headMesh.scale.set(1.2, 1.2, 1.2);
-headGroup.add(headMesh);
-
-// 隐形点击区 (Hitbox) - 用于射线检测
-const headHitbox = new THREE.Mesh(
-    new THREE.SphereGeometry(0.8, 16, 16),
-    new THREE.MeshBasicMaterial({ visible: false })
-);
-headHitbox.name = "TigerHead";
-headGroup.add(headHitbox);
-
-
-// --- 四肢 (Legs) ---
-// 辅助函数：创建一条腿
-function createLeg(x, y, z) {
-    const legG = new THREE.Group();
-    legG.position.set(x, y, z);
-    const legM = createParticleShape(null, 400, goldMat);
-    legM.scale.set(0.6, 2.0, 0.6);
-    legM.position.y = -1.0; // 枢轴在顶部
-    legG.add(legM);
-    return legG;
+function createLeg(x,y,z) {
+    const g = new THREE.Group(); g.position.set(x,y,z);
+    const m = createParticleShape(500, goldMat); m.scale.set(0.7, 2.2, 0.7); m.position.y = -1.0;
+    g.add(m); return g;
 }
-
-const legFL = createLeg(1.5, -0.5, 0.5);
-const legFR = createLeg(1.5, -0.5, -0.5);
-const legBL = createLeg(-1.5, -0.5, 0.5);
-const legBR = createLeg(-1.5, -0.5, -0.5);
+const legFL = createLeg(1.5, -0.5, 0.5); const legFR = createLeg(1.5, -0.5, -0.5);
+const legBL = createLeg(-1.5, -0.5, 0.5); const legBR = createLeg(-1.5, -0.5, -0.5);
 tigerGroup.add(legFL, legFR, legBL, legBR);
-
-// --- 尾巴 (Tail) ---
-const tailGroup = new THREE.Group();
-tailGroup.position.set(-2.0, 0.2, 0);
-const tailMesh = createParticleShape(null, 300, goldMat);
-tailMesh.scale.set(2.0, 0.3, 0.3);
-tailMesh.position.x = -1.0; // 向后延伸
-tailGroup.add(tailMesh);
-bodyGroup.add(tailGroup); // 尾巴连着身体
-
+const tailGroup = new THREE.Group(); tailGroup.position.set(-2.0, 0.2, 0);
+const tailMesh = createParticleShape(400, goldMat); tailMesh.scale.set(2.0, 0.3, 0.3); tailMesh.position.x = -1.0;
+tailGroup.add(tailMesh); bodyGroup.add(tailGroup);
 
 // ==========================================
-// 4. 文字粒子系统 (在右侧生成)
+// 4. 文字粒子系统 (中文从下升起，英文固定)
 // ==========================================
-let textGroup = new THREE.Group();
-textGroup.position.x = 3.0; // 【关键】放在右侧
+const textGroup = new THREE.Group();
+textGroup.position.set(2, 0, 0); // 文字整体在右侧
 scene.add(textGroup);
 
-let wishParticles = null;
-
-function createWishParticles(text) {
-    if (wishParticles) {
-        textGroup.remove(wishParticles);
-        wishParticles.geometry.dispose();
-    }
+// 英文标题 (GOLDEN TIGER)
+function createEnglishTitle() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 512; canvas.height = 256; // 加高一点以防换行
-    // 字体设置
-    ctx.font = 'bold 60px "Cinzel", serif'; 
+    canvas.width = 1024; canvas.height = 128;
+    ctx.font = 'bold 60px "Cinzel", serif';
     ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText("GOLDEN TIGER, YOUR GUARDIAN", 512, 64);
     
-    // 简单的自动换行逻辑
-    const words = text.split(' ');
-    let line = '';
-    let y = 100;
-    const lineHeight = 70;
-    
-    for(let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > 480 && n > 0) {
-             ctx.fillText(line, 256, y);
-             line = words[n] + ' ';
-             y += lineHeight;
-        } else {
-             line = testLine;
-        }
-    }
-    ctx.fillText(line, 256, y);
-
-    const imgData = ctx.getImageData(0,0,512,256).data;
+    // 生成粒子
+    const imgData = ctx.getImageData(0,0,1024,128).data;
     const particles = [];
-    for(let y=0; y<256; y+=3) {
-        for(let x=0; x<512; x+=3) {
-            if(imgData[(y*512 + x)*4] > 128) {
-                // 坐标映射
-                const u = (x / 512 - 0.5) * 8; 
-                const v = (1 - y / 256) * 4; 
-                particles.push({x: u, y: v, z: 0}); 
+    for(let y=0; y<128; y+=2) {
+        for(let x=0; x<1024; x+=2) {
+            if(imgData[(y*1024+x)*4]>128) {
+                particles.push({x: (x/1024-0.5)*12, y: (1-y/128)*1.5 + 2, z: 0}); // y+2 放在上面
             }
         }
     }
-    const pCount = particles.length;
-    const pGeo = new THREE.OctahedronGeometry(0.04, 0);
-    const pMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, blending: THREE.AdditiveBlending });
-    setupExplosionMaterial(pMat); 
-    
-    wishParticles = new THREE.InstancedMesh(pGeo, pMat, pCount);
-    textGroup.add(wishParticles);
-    
-    const dummyP = new THREE.Object3D();
-    const pDirs = []; const pSpeeds = [];
-    for(let i=0; i<pCount; i++) {
-        dummyP.position.set(particles[i].x, particles[i].y, particles[i].z);
-        dummyP.rotation.set(Math.random(),Math.random(),Math.random());
-        dummyP.updateMatrix(); wishParticles.setMatrixAt(i, dummyP.matrix);
-        // 爆炸方向：向屏幕外炸
-        pDirs.push(Math.random()-0.5, Math.random()-0.5, 1.0); 
-        pSpeeds.push(Math.random()*2 + 1);
+    const mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.02,0), goldMat, particles.length);
+    const dummy = new THREE.Object3D();
+    const dirs=[], speeds=[];
+    for(let i=0; i<particles.length; i++){
+        dummy.position.set(particles[i].x, particles[i].y, particles[i].z);
+        dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+        dirs.push(Math.random()-0.5, Math.random()-0.5, 1); speeds.push(Math.random()*2+1);
     }
-    fillAttributes(wishParticles.geometry, pCount, (i,v)=>v.set(pDirs[i*3], pDirs[i*3+1], pDirs[i*3+2]).normalize(), (i)=>pSpeeds[i]);
+    fillAttributes(mesh.geometry, particles.length, (i,v)=>v.set(dirs[i*3],dirs[i*3+1],dirs[i*3+2]).normalize(), (i)=>speeds[i]);
+    textGroup.add(mesh);
     
-    // 特效：闪现
-    gsap.from(wishParticles.material, { opacity: 0, duration: 1.5 });
-    gsap.from(textGroup.position, { x: 5.0, duration: 1.5, ease: "power2.out" }); // 从右边滑入
+    // 英文入场动画
+    mesh.position.y = -5; // 初始在下面
+    mesh.material.opacity = 0;
+    gsap.to(mesh.position, { y: 0, duration: 2, ease: "power2.out", delay: 0.5 });
+    gsap.to(mesh.material, { opacity: 1, duration: 2, delay: 0.5 });
 }
+
+// 中文竖排粒子生成器 (花体字)
+function createChineseChar(char, offsetX) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 256; canvas.height = 256;
+    ctx.font = '200px "Ma Shan Zheng", cursive'; // 毛笔字体
+    ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(char, 128, 128);
+    
+    const imgData = ctx.getImageData(0,0,256,256).data;
+    const particles = [];
+    for(let y=0; y<256; y+=3) { // 精度适中
+        for(let x=0; x<256; x+=3) {
+            if(imgData[(y*256+x)*4]>128) {
+                particles.push({x: (x/256-0.5)*3, y: (1-y/256)*3, z: 0});
+            }
+        }
+    }
+    const mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.03,0), goldMat, particles.length);
+    const dummy = new THREE.Object3D();
+    const dirs=[], speeds=[];
+    for(let i=0; i<particles.length; i++){
+        dummy.position.set(particles[i].x, particles[i].y, particles[i].z);
+        dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+        dirs.push(Math.random()-0.5, Math.random()-0.5, 1); speeds.push(Math.random()*2+1);
+    }
+    fillAttributes(mesh.geometry, particles.length, (i,v)=>v.set(dirs[i*3],dirs[i*3+1],dirs[i*3+2]).normalize(), (i)=>speeds[i]);
+    
+    // 定位
+    mesh.position.set(offsetX, -10, 0); // 初始在地下
+    textGroup.add(mesh);
+    return mesh;
+}
+
+// 生成文字队列
+createEnglishTitle();
+// "金色大老虎"
+const chars1 = ['金', '色', '大', '老', '虎'];
+chars1.forEach((char, i) => {
+    const mesh = createChineseChar(char, (i - 2) * 2.5); // 横向排列
+    // 动画：一个接一个升起
+    gsap.to(mesh.position, { y: 0, duration: 1.5, ease: "back.out(1.2)", delay: 1.5 + i * 0.2 });
+});
+// "你的守护神"
+const chars2 = ['你', '的', '守', '护', '神'];
+chars2.forEach((char, i) => {
+    const mesh = createChineseChar(char, (i - 2) * 2.5);
+    // 放在第二行
+    gsap.to(mesh.position, { y: -3.5, duration: 1.5, ease: "back.out(1.2)", delay: 2.5 + i * 0.2 });
+});
 
 
 // ==========================================
-// 5. 交互与动画
+// 5. 炎火系统 (Hellfire)
+// ==========================================
+const fireCount = 2000;
+const fireGeo = new THREE.BufferGeometry();
+const firePos = new Float32Array(fireCount * 3);
+const fireLife = new Float32Array(fireCount); // 生命周期
+
+for(let i=0; i<fireCount; i++) {
+    firePos[i*3] = (Math.random()-0.5) * 20; // 宽范围
+    firePos[i*3+1] = (Math.random()-0.5) * 5 - 5; // 底部
+    firePos[i*3+2] = (Math.random()-0.5) * 10;
+    fireLife[i] = Math.random();
+}
+fireGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
+
+const fireMat = new THREE.PointsMaterial({
+    color: 0xFF4500, size: 0.15, transparent: true, opacity: 0.8, 
+    blending: THREE.AdditiveBlending, sizeAttenuation: true
+});
+const fireSystem = new THREE.Points(fireGeo, fireMat);
+scene.add(fireSystem);
+
+// ==========================================
+// 6. 金龙绕飞 (Golden Dragon Spirit)
+// ==========================================
+const dragonLen = 100; // 龙身长度
+const dragonGeo = new THREE.SphereGeometry(0.15, 8, 8);
+const dragonMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+const dragonMesh = new THREE.InstancedMesh(dragonGeo, dragonMat, dragonLen);
+scene.add(dragonMesh);
+
+const dragonPath = [];
+const dragonDummy = new THREE.Object3D();
+
+// ==========================================
+// 7. 交互与弹窗
 // ==========================================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -290,125 +293,101 @@ window.addEventListener('pointerdown', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(headHitbox); // 检测是否点击老虎头
-    
-    if (intersects.length > 0) {
-        // 点击老虎头 -> 咆哮 + 打开弹窗
+    if (raycaster.intersectObject(headHitbox).length > 0) {
         roarAnimation();
         setTimeout(openModal, 500);
     }
 });
 
 function roarAnimation() {
-    // 咆哮动作：头猛烈晃动，张嘴(模拟)
     gsap.to(headGroup.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.1, yoyo: true, repeat: 3 });
-    gsap.to(headGroup.rotation, { z: 0.5, duration: 0.1, yoyo: true, repeat: 5 });
-    // 屏幕震动感
-    gsap.to(camera.position, { x: 0.2, duration: 0.05, yoyo: true, repeat: 5, onComplete: () => camera.position.set(0,2,18) });
+    gsap.to(camera.position, { x: 0.5, duration: 0.05, yoyo: true, repeat: 5, onComplete: () => camera.position.set(0,2,22) });
 }
 
 function openModal() {
-    isModalOpen = true;
-    modal.classList.add('visible');
-    modal.classList.remove('hidden');
-    input.focus();
+    isModalOpen = true; modal.classList.add('visible'); modal.classList.remove('hidden'); input.focus();
 }
-
 function closeModal() {
-    isModalOpen = false;
-    modal.classList.remove('visible');
-    setTimeout(() => modal.classList.add('hidden'), 500);
+    isModalOpen = false; modal.classList.remove('visible'); setTimeout(() => modal.classList.add('hidden'), 500);
 }
-
 document.getElementById('wish-submit').addEventListener('click', () => {
-    const text = input.value.trim();
-    if (text) {
-        createWishParticles(text);
-        closeModal();
-        input.value = '';
-        // 发送完后，老虎跑快一点庆祝
-        runSpeedMultiplier = 2.0;
-        setTimeout(() => runSpeedMultiplier = 1.0, 2000);
-    }
+    if(input.value.trim()) { createEnglishTitle(); closeModal(); input.value = ''; } // 简单重置文字特效
 });
 document.getElementById('close-modal').addEventListener('click', closeModal);
 
-
 // ==========================================
-// 6. 渲染循环 (Running Animation)
+// 8. 渲染循环
 // ==========================================
 const renderScene = new RenderPass(scene, camera);
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.4, 0.85);
+// 强烈的 Bloom 效果，制造火焰感
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
 const composer = new EffectComposer(renderer);
 composer.addPass(renderScene);
 composer.addPass(bloomPass);
 
-let targetExpansion = 0;
-let currentExpansion = 0;
-let runSpeedMultiplier = 1.0;
-
+let targetExpansion = 0; let currentExpansion = 0;
 window.addEventListener('wheel', (e) => {
     targetExpansion += e.deltaY * 0.002;
     targetExpansion = Math.max(0, Math.min(targetExpansion, 5.0));
 });
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.enableZoom = false; 
-// 锁定视角，不要自动旋转，否则看不清老虎跑步
-controls.autoRotate = false; 
-controls.maxPolarAngle = Math.PI / 1.6;
-
+controls.enableDamping = true; controls.enableZoom = false; controls.autoRotate = false;
 const clock = new THREE.Clock();
 
 function animate() {
     requestAnimationFrame(animate);
     const time = clock.getElapsedTime();
-    
-    // 1. 爆炸逻辑
     currentExpansion += (targetExpansion - currentExpansion) * 0.05;
     globalUniforms.uExpansion.value = currentExpansion;
 
-    // 2. 奔跑动画 (Running Cycle)
-    // 速度
-    const speed = time * 8.0 * runSpeedMultiplier;
-    
-    // 身体起伏
+    // 1. 老虎奔跑
+    const speed = time * 8.0;
     bodyGroup.position.y = Math.sin(speed * 2) * 0.1;
-    bodyGroup.rotation.z = Math.sin(speed) * 0.05; // 身体轻微扭动
-
-    // 腿部摆动 (对角线原则：左前+右后 一组，右前+左后 一组)
-    legFL.rotation.z = Math.sin(speed) * 0.8;
-    legBR.rotation.z = Math.sin(speed) * 0.8;
-    
-    legFR.rotation.z = Math.sin(speed + Math.PI) * 0.8;
-    legBL.rotation.z = Math.sin(speed + Math.PI) * 0.8;
-    
-    // 膝盖弯曲模拟 (简单版)
-    legFL.position.y = Math.max(-0.5, -0.5 + Math.sin(speed) * 0.3);
-    legFR.position.y = Math.max(-0.5, -0.5 + Math.sin(speed + Math.PI) * 0.3);
-
-    // 尾巴摆动
+    legFL.rotation.z = Math.sin(speed) * 0.8; legBR.rotation.z = Math.sin(speed) * 0.8;
+    legFR.rotation.z = Math.sin(speed + Math.PI) * 0.8; legBL.rotation.z = Math.sin(speed + Math.PI) * 0.8;
+    legFL.position.y = Math.max(-0.5, -0.5 + Math.sin(speed) * 0.3); legFR.position.y = Math.max(-0.5, -0.5 + Math.sin(speed + Math.PI) * 0.3);
     tailGroup.rotation.z = Math.sin(speed * 0.5) * 0.5;
-    tailGroup.rotation.y = Math.cos(speed * 0.5) * 0.3;
 
-    // 头稍微看一点镜头
-    headGroup.lookAt(camera.position);
-
-    // 3. 文字粒子漂浮
-    if (wishParticles) {
-        textGroup.rotation.y = Math.sin(time) * 0.05;
-        textGroup.position.y = Math.sin(time * 0.5) * 0.1;
+    // 2. 炎火上升
+    const fPos = fireGeo.attributes.position.array;
+    for(let i=0; i<fireCount; i++) {
+        // Y轴上升
+        fPos[i*3+1] += 0.05 + Math.random()*0.05;
+        // 扰动
+        fPos[i*3] += Math.sin(time + fPos[i*3+1])*0.02;
+        // 循环
+        if(fPos[i*3+1] > 3) {
+            fPos[i*3+1] = -6;
+            fPos[i*3] = (Math.random()-0.5)*20;
+        }
     }
+    fireGeo.attributes.position.needsUpdate = true;
+
+    // 3. 金龙飞舞 (Lissajous Curve)
+    const dX = Math.sin(time * 1.5) * 10;
+    const dY = Math.cos(time * 0.8) * 4;
+    const dZ = Math.sin(time * 0.5) * 5;
+    dragonPath.unshift({x:dX, y:dY, z:dZ}); // 记录头的位置
+    if(dragonPath.length > dragonLen) dragonPath.pop(); // 保持长度
+
+    for(let i=0; i<dragonPath.length; i++) {
+        dragonDummy.position.set(dragonPath[i].x, dragonPath[i].y, dragonPath[i].z);
+        // 龙头大，龙尾小
+        const scale = (1 - i/dragonLen) * 2.0;
+        dragonDummy.scale.set(scale, scale, scale);
+        dragonDummy.updateMatrix();
+        dragonMesh.setMatrixAt(i, dragonDummy.matrix);
+    }
+    dragonMesh.instanceMatrix.needsUpdate = true;
 
     controls.update();
     composer.render();
 }
-
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     composer.setSize(window.innerWidth, window.innerHeight);
 });
-
 animate();

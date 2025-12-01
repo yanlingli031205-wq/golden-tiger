@@ -1,55 +1,60 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital@0;1&display=swap');
+/* 引入：
+   1. Cinzel: 英文奢华衬线体
+   2. Ma Shan Zheng: 中文霸气毛笔书法体
+*/
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
   --gold: #FFD700;
+  --fire: #FF4500;
   --black: #050505;
 }
 
 body {
   margin: 0; padding: 0; width: 100vw; height: 100vh;
   overflow: hidden; background-color: var(--black);
-  font-family: 'Cinzel', serif;
+  font-family: 'Cinzel', serif; /* 默认英文 */
 }
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-/* 许愿弹窗 (保持不变，深色高级感) */
+/* 许愿弹窗样式 (保持原有高级感) */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
   z-index: 100; display: flex; justify-content: center; align-items: center;
   opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
 }
 #wish-modal.visible { opacity: 1; pointer-events: auto; }
 
 .modal-content {
-  background: rgba(10, 10, 10, 0.9); border: 1px solid rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, #1a0505 0%, #000000 100%);
+  border: 1px solid var(--fire); /* 改为火红色边框 */
   padding: 4rem; text-align: center;
-  box-shadow: 0 0 50px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 50px rgba(255, 69, 0, 0.3);
   transform: scale(0.9); transition: transform 0.4s ease;
 }
 #wish-modal.visible .modal-content { transform: scale(1); }
 
-.modal-title { color: var(--gold); font-size: 2rem; margin-bottom: 2rem; }
+.modal-title { 
+  font-family: 'Ma Shan Zheng', cursive; /* 中文标题用毛笔字 */
+  color: var(--gold); font-size: 3rem; margin-bottom: 2rem; 
+  text-shadow: 0 0 10px var(--fire);
+}
 
 #wish-input {
-  background: transparent; border: none; border-bottom: 1px solid #666;
-  color: #fff; font-family: 'Playfair Display', serif; font-size: 1.5rem;
+  background: transparent; border: none; border-bottom: 2px solid #666;
+  color: #fff; font-family: 'Ma Shan Zheng', cursive; font-size: 2rem;
   text-align: center; width: 100%; max-width: 400px; padding: 10px; margin-bottom: 2rem;
   outline: none;
 }
-#wish-input:focus { border-bottom: 1px solid var(--gold); }
+#wish-input:focus { border-bottom: 2px solid var(--fire); }
 
 #wish-submit {
   background: transparent; border: 1px solid var(--gold); color: var(--gold);
   padding: 10px 40px; font-family: 'Cinzel', serif; cursor: pointer; transition: 0.3s;
+  font-weight: bold; letter-spacing: 2px;
 }
-#wish-submit:hover { background: var(--gold); color: #000; }
+#wish-submit:hover { background: var(--gold); color: #000; box-shadow: 0 0 20px var(--gold); }
 #close-modal { position: absolute; top: 15px; right: 20px; color: #666; font-size: 2rem; cursor: pointer; }
 .hidden { display: none !important; }
-
-/* 简单的引导文字 */
-#intro-text {
-  position: absolute; bottom: 5%; width: 100%; text-align: center;
-  color: #444; letter-spacing: 0.5em; font-size: 0.8rem; pointer-events: none; z-index: 10;
-}
