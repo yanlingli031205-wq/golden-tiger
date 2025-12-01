@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ma+Shan+Zheng&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
   --gold: #F0E68C;
@@ -14,12 +14,13 @@ body {
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-/* UI 布局 */
+/* UI 布局 - 已修改 */
 #ui-layer {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 10;
-  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; /* 右对齐 */
-  padding-right: 10%;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; 
+  /* 【关键修改】padding-right 从 10% 改为 25%，整体往左移 */
+  padding-right: 25%;
   transition: opacity 1s ease;
 }
 
@@ -27,21 +28,20 @@ body {
   font-size: min(3rem, 5vw); font-weight: 700; letter-spacing: 0.2em;
   background: linear-gradient(to right, #fff, var(--gold));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  margin: 0; text-shadow: 0 0 20px rgba(240, 230, 140, 0.3);
+  margin: 0; text-shadow: 0 0 20px rgba(240, 230, 140, 0.5);
 }
 
 .title-cn {
-  font-family: 'Ma Shan Zheng', cursive; /* 毛笔字 */
+  font-family: 'Ma Shan Zheng', cursive; 
   font-size: min(4rem, 6vw); color: var(--gold);
   margin-top: 10px; margin-bottom: 0;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
 
 .hint {
-  margin-top: 40px; font-size: 0.8rem; color: #666; letter-spacing: 0.3em;
+  margin-top: 40px; font-size: 0.8rem; color: #888; letter-spacing: 0.3em;
 }
 
-/* 弹窗样式 */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px);
@@ -54,7 +54,7 @@ body {
   width: 100%; max-width: 450px; text-align: center;
   border: 1px solid var(--gold); padding: 3rem;
   background: radial-gradient(circle, rgba(20,20,20,0.9) 0%, rgba(0,0,0,1) 100%);
-  box-shadow: 0 0 50px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
 }
 
 .modal-title { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 2rem; letter-spacing: 0.2em; }
@@ -72,6 +72,5 @@ body {
   cursor: pointer; transition: 0.3s;
 }
 #wish-submit:hover { background: #fff; box-shadow: 0 0 20px #fff; }
-
 #close-modal { position: absolute; top: 30px; right: 30px; color: #666; cursor: pointer; font-size: 1.5rem; }
 .hidden { display: none !important; }

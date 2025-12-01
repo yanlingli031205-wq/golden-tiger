@@ -7,20 +7,27 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import gsap from 'gsap';
 
 // ==========================================
-// 1. 核心引擎：Shader 爆炸逻辑 (The Soul)
+// 1. 核心引擎：Shader (奔跑 + 爆炸 + 闪烁)
 // ==========================================
-// 这个 uniform 控制所有粒子（老虎+文字）的爆炸
-const globalUniforms = { uExpansion: { value: 0.0 } };
+const globalUniforms = { 
+    uExpansion: { value: 0.0 },
+    uTime: { value: 0.0 }
+};
 
 function setupParticleMaterial(material) {
     material.onBeforeCompile = (shader) => {
         shader.uniforms.uExpansion = globalUniforms.uExpansion;
-        // 顶点着色器注入
+        shader.uniforms.uTime = globalUniforms.uTime;
+        
         shader.vertexShader = `
             attribute vec3 aDirection;
             attribute float aSpeed;
             attribute vec3 aRotationAxis;
+            attribute float aPart; // 0=身, 1=腿, 2=头/尾
+            attribute float aPhase; // 跑步相位
+            
             uniform float uExpansion;
+            uniform float uTime;
             
             // 旋转矩阵
             mat4 rotationMatrix(vec3 axis, float angle) {
@@ -39,11 +46,40 @@ function setupParticleMaterial(material) {
             `
             #include <begin_vertex>
             
+            // --- A. 奔跑动画逻辑 (当没有爆炸时生效) ---
+            float runSpeed = 5.0;
+            float t = uTime * runSpeed;
+            vec3 runOffset = vec3(0.0);
+            
+            // 只有当爆炸很小时才明显奔跑，炸开了就停止动作
+            float runStrength = 1.0 - smoothstep(0.0, 1.0, uExpansion); 
+            
+            if (runStrength > 0.01) {
+                // 1. 腿部 (aPart == 1.0)
+                if (abs(aPart - 1.0) < 0.1) {
+                    float legAngle = sin(t + aPhase) * 0.8;
+                    // 简单的绕枢轴旋转模拟
+                    runOffset.y += sin(t + aPhase) * 0.3;
+                    runOffset.z += cos(t + aPhase) * 0.6;
+                }
+                // 2. 身体 (aPart == 0.0)
+                else if (abs(aPart - 0.0) < 0.1) {
+                    runOffset.y += sin(t * 2.0) * 0.1; // 上下起伏
+                }
+                // 3. 尾巴 (aPart == 2.0)
+                else if (abs(aPart - 2.0) < 0.1) {
+                    runOffset.x += sin(t) * 0.1; // 左右摆
+                }
+            }
+            
+            transformed += runOffset * runStrength;
+
+            // --- B. 爆炸逻辑 (优先级更高) ---
             float progress = uExpansion * aSpeed;
             
             // 1. 爆炸位移
-            vec3 offset = aDirection * progress * 12.0; // 炸得远一点
-            transformed += offset;
+            vec3 explodeOffset = aDirection * progress * 12.0;
+            transformed += explodeOffset;
             
             // 2. 旋转飞散
             if (progress > 0.01) {
@@ -51,166 +87,167 @@ function setupParticleMaterial(material) {
                 transformed = (rot * vec4(transformed, 1.0)).xyz;
             }
             
-            // 3. 自身闪烁微动 (呼吸感)
-            transformed *= (1.0 + sin(position.y * 10.0 + uExpansion) * 0.1);
+            // --- C. 闪烁特效 (Sparkle) ---
+            // 根据时间改变大小，制造 bling bling 效果
+            float sparkle = 1.0 + 0.3 * sin(uTime * 10.0 + position.x * 20.0);
+            transformed *= sparkle;
             `
         );
     };
 }
 
 // 辅助函数：填充粒子属性
-function fillAttributes(geometry, count, getDirFunc) {
-    const directions = []; const speeds = []; const axes = []; const dummyDir = new THREE.Vector3();
+function fillAttributes(geometry, count, partID, phase) {
+    const directions = []; const speeds = []; const axes = []; 
+    const parts = []; const phases = [];
+    
     for (let i = 0; i < count; i++) {
-        if (getDirFunc) {
-            getDirFunc(i, dummyDir);
-            directions.push(dummyDir.x, dummyDir.y, dummyDir.z);
-        } else {
-            // 默认向外炸
-            directions.push(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5);
-        }
+        // 爆炸方向：随机
+        directions.push(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5);
         speeds.push(Math.random() * 0.5 + 0.5);
         axes.push(Math.random(), Math.random(), Math.random());
+        parts.push(partID); // 记录部位
+        phases.push(phase !== undefined ? phase : 0); // 记录相位
     }
     geometry.setAttribute('aDirection', new THREE.InstancedBufferAttribute(new Float32Array(directions), 3));
     geometry.setAttribute('aSpeed', new THREE.InstancedBufferAttribute(new Float32Array(speeds), 1));
     geometry.setAttribute('aRotationAxis', new THREE.InstancedBufferAttribute(new Float32Array(axes), 3));
+    geometry.setAttribute('aPart', new THREE.InstancedBufferAttribute(new Float32Array(parts), 1));
+    geometry.setAttribute('aPhase', new THREE.InstancedBufferAttribute(new Float32Array(phases), 1));
 }
 
 // ==========================================
-// 2. 场景设置 (Cinematic Dark)
+// 2. 场景设置
 // ==========================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#050505');
-scene.fog = new THREE.FogExp2('#050505', 0.02);
+scene.background = new THREE.Color('#000000');
+scene.fog = new THREE.FogExp2('#000000', 0.02);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(-6, 2, 16); // 侧视构图
+camera.position.set(-6, 2, 16); 
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
 
-// 灯光 (Rim Light 重头戏)
-const ambientLight = new THREE.AmbientLight('#111111', 1.0);
+// 灯光
+const ambientLight = new THREE.AmbientLight('#222222', 1.0);
 scene.add(ambientLight);
 
-const rimLight = new THREE.SpotLight('#FFFACD', 8.0); // 强烈的背光
+const rimLight = new THREE.SpotLight('#FFFACD', 8.0); 
 rimLight.position.set(-5, 5, -10);
 rimLight.lookAt(0,0,0);
 scene.add(rimLight);
 
-const goldLight = new THREE.PointLight('#FFD700', 2.0, 20); // 局部补光
+const goldLight = new THREE.PointLight('#FFD700', 3.0, 20); 
 goldLight.position.set(5, 5, 5);
 scene.add(goldLight);
 
 
 // ==========================================
-// 3. 构建粒子猛虎 (Procedural)
+// 3. 构建粒子猛虎 (带奔跑属性)
 // ==========================================
 const tigerGroup = new THREE.Group();
-tigerGroup.position.x = -2; // 稍微居左
+tigerGroup.position.x = -3; // 居左
 scene.add(tigerGroup);
 
-// 材质：金钻粒子
+// 材质：超高光泽金
 const particleMat = new THREE.MeshStandardMaterial({
     color: '#FFD700',
-    roughness: 0.2,
-    metalness: 1.0,
-    emissive: '#553300',
-    emissiveIntensity: 0.2
+    roughness: 0.05, // 极低粗糙度 = 极高反光
+    metalness: 1.0,  // 纯金属
+    emissive: '#443300',
+    emissiveIntensity: 0.4 // 自发光增强
 });
-setupParticleMaterial(particleMat); // 注入灵魂
+setupParticleMaterial(particleMat); 
 
-// 隐形 Hitbox 集合 (用于点击检测)
 const hitboxes = [];
 
-function createBodyPart(count, scale, pos, name) {
-    // 几何体：八面体 (钻石感)
-    const geo = new THREE.OctahedronGeometry(0.05, 0);
+function createBodyPart(count, scale, pos, partID, phase) {
+    const geo = new THREE.OctahedronGeometry(0.06, 0); // 粒子稍微大一点点
     const mesh = new THREE.InstancedMesh(geo, particleMat, count);
     const dummy = new THREE.Object3D();
-    const dirs = []; // 爆炸方向
 
     for(let i=0; i<count; i++) {
-        // 在椭球体内随机分布
         const x = (Math.random()-0.5);
         const y = (Math.random()-0.5);
         const z = (Math.random()-0.5);
-        if(x*x+y*y+z*z > 0.25) { i--; continue; } // 过滤成球状
+        if(x*x+y*y+z*z > 0.25) { i--; continue; } 
 
         dummy.position.set(x*2, y*2, z*2);
         dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-        // 粒子大小随机，制造闪烁感
+        // 随机缩放
         const s = Math.random() * 0.8 + 0.2;
         dummy.scale.set(s,s,s);
         
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
-        
-        // 记录爆炸方向：沿法线向外
-        dirs.push(x, y, z); 
     }
     
-    // 填充 Shader 属性
-    const dummyVec = new THREE.Vector3();
-    fillAttributes(geo, count, (i, v) => v.set(dirs[i*3], dirs[i*3+1], dirs[i*3+2]).normalize());
+    // 填充 Shader 属性 (传入 partID 和 phase)
+    fillAttributes(geo, count, partID, phase);
 
     mesh.scale.set(scale.x, scale.y, scale.z);
     mesh.position.set(pos.x, pos.y, pos.z);
     tigerGroup.add(mesh);
 
-    // 创建对应的隐形碰撞体
-    const hitGeo = new THREE.SphereGeometry(1, 8, 8); // 简化碰撞体
+    // 碰撞体
+    const hitGeo = new THREE.SphereGeometry(1, 8, 8);
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
     const hitMesh = new THREE.Mesh(hitGeo, hitMat);
     hitMesh.scale.set(scale.x, scale.y, scale.z);
     hitMesh.position.set(pos.x, pos.y, pos.z);
-    hitMesh.name = "TigerPart_" + name;
     tigerGroup.add(hitMesh);
     hitboxes.push(hitMesh);
 
     return mesh;
 }
 
-// 组装老虎 (抽象形态)
-createBodyPart(2000, {x:4.0, y:1.5, z:1.5}, {x:0, y:0, z:0}, "Body");
-createBodyPart(800, {x:1.3, y:1.3, z:1.3}, {x:2.5, y:0.8, z:0}, "Head");
-createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:1.5, y:-1.2, z:0.6}, "LegFL");
-createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:1.5, y:-1.2, z:-0.6}, "LegFR");
-createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:-1.5, y:-1.2, z:0.6}, "LegBL");
-createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:-1.5, y:-1.2, z:-0.6}, "LegBR");
-createBodyPart(300, {x:2.0, y:0.3, z:0.3}, {x:-3.0, y:0.5, z:0}, "Tail");
+// 组装老虎 (定义部位 ID: 0=身, 1=腿, 2=头/尾)
+createBodyPart(2000, {x:4.0, y:1.5, z:1.5}, {x:0, y:0, z:0}, 0, 0); // 身
+createBodyPart(800, {x:1.3, y:1.3, z:1.3}, {x:2.5, y:0.8, z:0}, 2, 0); // 头
+
+// 四肢 (Part 1, 带相位 phase)
+// 左前(0), 右后(0) 同相
+createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:1.5, y:-1.2, z:0.5}, 1, 0); 
+createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:-1.5, y:-1.2, z:-0.5}, 1, 0); 
+// 右前(PI), 左后(PI) 反相
+createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:1.5, y:-1.2, z:-0.5}, 1, Math.PI); 
+createBodyPart(400, {x:0.6, y:2.0, z:0.6}, {x:-1.5, y:-1.2, z:0.5}, 1, Math.PI); 
+
+// 尾巴
+createBodyPart(300, {x:2.0, y:0.3, z:0.3}, {x:-3.0, y:0.5, z:0}, 2, 0);
 
 
 // ==========================================
-// 4. 书法粒子系统 (Flying Calligraphy)
+// 4. 稀疏闪耀文字粒子系统
 // ==========================================
 let textMesh = null;
 const textGroup = new THREE.Group();
 scene.add(textGroup);
 
 function createWishParticles(text) {
-    // 清理旧的
     if (textMesh) { textGroup.remove(textMesh); textMesh.geometry.dispose(); }
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 512; canvas.height = 256;
-    // 使用毛笔字体
     ctx.font = '100px "Ma Shan Zheng", cursive'; 
     ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(text, 256, 128);
 
     const imgData = ctx.getImageData(0,0,512,256).data;
     const particles = [];
-    for(let y=0; y<256; y+=3) { // 密度适中
-        for(let x=0; x<512; x+=3) {
+    
+    // 【关键修改】步长从 3 改为 6 -> 粒子变稀疏
+    const step = 6; 
+    
+    for(let y=0; y<256; y+=step) { 
+        for(let x=0; x<512; x+=step) {
             if(imgData[(y*512+x)*4] > 128) {
-                // 粒子化坐标
                 particles.push({
                     x: (x/512 - 0.5) * 8, 
                     y: (1 - y/256) * 4, 
@@ -220,14 +257,17 @@ function createWishParticles(text) {
         }
     }
 
-    const geo = new THREE.OctahedronGeometry(0.04, 0);
-    const mat = new THREE.MeshBasicMaterial({ 
+    // 粒子调大一点，弥补稀疏感
+    const geo = new THREE.OctahedronGeometry(0.06, 0);
+    // 文字也用超闪材质
+    const mat = new THREE.MeshStandardMaterial({ 
         color: 0xFFD700, 
-        transparent: true, 
-        opacity: 0.8,
-        blending: THREE.AdditiveBlending 
+        roughness: 0.0,
+        metalness: 1.0,
+        emissive: 0xFFD700,
+        emissiveIntensity: 0.5
     });
-    // 【关键】文字粒子也注入爆炸逻辑！
+    // 注入爆炸 Shader
     setupParticleMaterial(mat); 
 
     textMesh = new THREE.InstancedMesh(geo, mat, particles.length);
@@ -236,19 +276,20 @@ function createWishParticles(text) {
     for(let i=0; i<particles.length; i++) {
         dummy.position.set(particles[i].x, particles[i].y, particles[i].z);
         dummy.rotation.set(Math.random(), Math.random(), 0);
+        // 随机大小，制造“星尘”感
+        const s = Math.random() * 0.5 + 0.5;
+        dummy.scale.set(s,s,s);
         dummy.updateMatrix();
         textMesh.setMatrixAt(i, dummy.matrix);
         // 文字爆炸方向：向前炸开
         dirs.push((Math.random()-0.5)*2, (Math.random()-0.5)*2, 2.0); 
     }
-    fillAttributes(geo, particles.length, (i,v)=>v.set(dirs[i*3], dirs[i*3+1], dirs[i*3+2]).normalize());
+    // 文字的 partID 设为 3 (不参与奔跑动画)
+    fillAttributes(geo, particles.length, 3, 0);
 
     textGroup.add(textMesh);
+    textGroup.position.set(3, 0, 0); // 放在右侧
     
-    // 放置在右侧
-    textGroup.position.set(3, 0, 0);
-    
-    // 入场动画：像墨水一样浮现
     gsap.from(textMesh.material, { opacity: 0, duration: 2 });
     gsap.from(textGroup.position, { y: -2, duration: 2, ease: "power2.out" });
 }
@@ -270,7 +311,7 @@ window.addEventListener('pointerdown', (event) => {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     
-    // 检测是否点击了老虎身体的任何部分
+    // 检测点击老虎
     const intersects = raycaster.intersectObjects(hitboxes);
     if (intersects.length > 0) {
         openModal();
@@ -282,32 +323,25 @@ function openModal() {
     modal.classList.add('visible');
     modal.classList.remove('hidden');
     input.focus();
-    // 隐藏左侧 UI
     gsap.to(uiLayer, { opacity: 0, duration: 0.5 });
-    // 相机拉近特效
-    gsap.to(camera.position, { x: -4, y: 1, z: 10, duration: 1.0 });
 }
 
 function closeModal() {
     isModalOpen = false;
     modal.classList.remove('visible');
     setTimeout(() => modal.classList.add('hidden'), 600);
-    // 相机复位
-    gsap.to(camera.position, { x: -6, y: 2, z: 16, duration: 1.0 });
+    gsap.to(uiLayer, { opacity: 1, duration: 1 });
 }
 
 document.getElementById('wish-submit').addEventListener('click', () => {
     const text = input.value.trim();
     if (text) {
-        createWishParticles(text); // 生成书法粒子
+        createWishParticles(text); 
         closeModal();
         input.value = '';
     }
 });
-document.getElementById('close-modal').addEventListener('click', () => {
-    closeModal();
-    gsap.to(uiLayer, { opacity: 1, duration: 1 }); // 如果没许愿关闭，恢复UI
-});
+document.getElementById('close-modal').addEventListener('click', closeModal);
 
 
 // ==========================================
@@ -323,7 +357,7 @@ let targetExpansion = 0;
 let currentExpansion = 0;
 window.addEventListener('wheel', (e) => {
     targetExpansion += e.deltaY * 0.002;
-    targetExpansion = Math.max(0, Math.min(targetExpansion, 6.0)); // 允许炸得很开
+    targetExpansion = Math.max(0, Math.min(targetExpansion, 6.0));
 });
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -335,20 +369,17 @@ const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame(animate);
     const time = clock.getElapsedTime();
+    globalUniforms.uTime.value = time;
     
-    // 1. 爆炸插值
+    // 爆炸插值
     currentExpansion += (targetExpansion - currentExpansion) * 0.05;
     globalUniforms.uExpansion.value = currentExpansion;
 
-    // 2. 老虎微动 (悬浮感)
-    tigerGroup.position.y = Math.sin(time) * 0.1;
-    tigerGroup.rotation.y = Math.sin(time * 0.2) * 0.1;
-
-    // 3. 文字粒子漂浮
-    if (textMesh) {
-        textGroup.rotation.y = Math.sin(time * 0.5) * 0.05;
-        textGroup.position.y = Math.sin(time * 0.3) * 0.1;
-    }
+    // 漂浮感
+    tigerGroup.position.y = Math.sin(time) * 0.05;
+    
+    // 视角微动
+    camera.position.x = -6 + Math.sin(time * 0.2) * 0.5;
 
     controls.update();
     composer.render();
