@@ -1,9 +1,9 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
   --gold: #F0E68C;
-  --gold-highlight: #FFFACD;
-  --black: #000000;
+  --gold-light: #FFFACD;
+  --black: #050505;
 }
 
 body {
@@ -14,64 +14,64 @@ body {
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
+/* UI 布局 */
 #ui-layer {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 10;
-  display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
-  padding-right: 10%; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; /* 右对齐 */
+  padding-right: 10%;
+  transition: opacity 1s ease;
 }
 
 .title-en {
-  font-size: min(4rem, 6vw); font-weight: 700; letter-spacing: 0.3em;
-  color: transparent;
-  background: linear-gradient(to right, var(--gold-highlight), var(--gold), #8B7500);
-  -webkit-background-clip: text; background-clip: text;
-  margin: 0; opacity: 0; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
-  transform: translateX(50px);
+  font-size: min(3rem, 5vw); font-weight: 700; letter-spacing: 0.2em;
+  background: linear-gradient(to right, #fff, var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin: 0; text-shadow: 0 0 20px rgba(240, 230, 140, 0.3);
 }
 
 .title-cn {
-  font-family: 'Noto Serif SC', serif; font-size: min(1.5rem, 2.5vw); font-weight: 300;
-  letter-spacing: 1.2em; color: #888; margin-top: 20px;
-  border-top: 1px solid #333; padding-top: 20px;
-  opacity: 0; transform: translateX(50px);
+  font-family: 'Ma Shan Zheng', cursive; /* 毛笔字 */
+  font-size: min(4rem, 6vw); color: var(--gold);
+  margin-top: 10px; margin-bottom: 0;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }
 
 .hint {
-  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-  color: #444; font-size: 0.8rem; letter-spacing: 0.5em; text-transform: uppercase;
-  opacity: 0;
+  margin-top: 40px; font-size: 0.8rem; color: #666; letter-spacing: 0.3em;
 }
 
+/* 弹窗样式 */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px);
   z-index: 100; display: flex; justify-content: center; align-items: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
 }
 #wish-modal.visible { opacity: 1; pointer-events: auto; }
 
 .modal-content {
-  width: 100%; max-width: 500px; text-align: center; border-left: 2px solid var(--gold);
-  padding: 4rem; background: linear-gradient(90deg, rgba(20,20,20,0.8), transparent);
+  width: 100%; max-width: 450px; text-align: center;
+  border: 1px solid var(--gold); padding: 3rem;
+  background: radial-gradient(circle, rgba(20,20,20,0.9) 0%, rgba(0,0,0,1) 100%);
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.1);
 }
 
-.modal-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 3rem; }
+.modal-title { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 2rem; letter-spacing: 0.2em; }
 
 #wish-input {
-  background: transparent; border: none; border-bottom: 1px solid #444;
-  color: #fff; font-family: 'Noto Serif SC', serif; font-size: 1.5rem;
-  text-align: center; width: 100%; padding: 15px; margin-bottom: 3rem; outline: none;
-  transition: border-color 0.5s;
+  background: transparent; border: none; border-bottom: 1px solid #555;
+  color: #fff; font-family: 'Ma Shan Zheng', cursive; font-size: 2rem;
+  text-align: center; width: 100%; padding: 10px; margin-bottom: 2rem; outline: none;
 }
 #wish-input:focus { border-bottom: 1px solid var(--gold); }
 
 #wish-submit {
-  background: transparent; border: 1px solid var(--gold); color: var(--gold);
-  padding: 15px 50px; font-family: 'Cinzel', serif; letter-spacing: 3px; cursor: pointer;
-  transition: all 0.5s ease; text-transform: uppercase; font-size: 0.8rem;
+  background: var(--gold); color: #000; border: none;
+  padding: 12px 40px; font-family: 'Cinzel', serif; letter-spacing: 2px;
+  cursor: pointer; transition: 0.3s;
 }
-#wish-submit:hover { background: var(--gold); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
-#close-modal { position: absolute; top: 40px; right: 40px; color: #444; cursor: pointer; font-size: 1.2rem; }
-#close-modal:hover { color: #fff; }
+#wish-submit:hover { background: #fff; box-shadow: 0 0 20px #fff; }
+
+#close-modal { position: absolute; top: 30px; right: 30px; color: #666; cursor: pointer; font-size: 1.5rem; }
 .hidden { display: none !important; }
