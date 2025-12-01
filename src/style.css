@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&display=swap');
 
 :root {
-  --gold: #F0E68C; /* 香槟金 */
+  --gold: #F0E68C;
   --gold-highlight: #FFFACD;
   --black: #000000;
 }
@@ -14,50 +14,35 @@ body {
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-/* --- 电影感排版 (Cinematic Layout) --- */
 #ui-layer {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 10;
-  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; /* 右对齐 */
-  padding-right: 10%; /* 右侧留白 */
-  box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+  padding-right: 10%; box-sizing: border-box;
 }
 
 .title-en {
-  font-size: min(4rem, 6vw);
-  font-weight: 700;
-  letter-spacing: 0.3em;
+  font-size: min(4rem, 6vw); font-weight: 700; letter-spacing: 0.3em;
   color: transparent;
   background: linear-gradient(to right, var(--gold-highlight), var(--gold), #8B7500);
-  -webkit-background-clip: text;
-  background-clip: text;
-  margin: 0;
-  opacity: 0; /* 初始隐藏 */
-  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
+  -webkit-background-clip: text; background-clip: text;
+  margin: 0; opacity: 0; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
   transform: translateX(50px);
 }
 
 .title-cn {
-  font-family: 'Noto Serif SC', serif;
-  font-size: min(1.5rem, 2.5vw);
-  font-weight: 300;
-  letter-spacing: 1.2em; /* 极宽字间距 */
-  color: #888; /* 银灰色，低调 */
-  margin-top: 20px;
-  border-top: 1px solid #333; /* 装饰线 */
-  padding-top: 20px;
-  opacity: 0;
-  transform: translateX(50px);
+  font-family: 'Noto Serif SC', serif; font-size: min(1.5rem, 2.5vw); font-weight: 300;
+  letter-spacing: 1.2em; color: #888; margin-top: 20px;
+  border-top: 1px solid #333; padding-top: 20px;
+  opacity: 0; transform: translateX(50px);
 }
 
-/* 交互提示 */
 .hint {
   position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
   color: #444; font-size: 0.8rem; letter-spacing: 0.5em; text-transform: uppercase;
   opacity: 0;
 }
 
-/* --- 许愿弹窗 (极简黑金) --- */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px);
@@ -67,15 +52,11 @@ body {
 #wish-modal.visible { opacity: 1; pointer-events: auto; }
 
 .modal-content {
-  width: 100%; max-width: 500px;
-  text-align: center; border-left: 2px solid var(--gold);
-  padding: 4rem;
-  background: linear-gradient(90deg, rgba(20,20,20,0.8), transparent);
+  width: 100%; max-width: 500px; text-align: center; border-left: 2px solid var(--gold);
+  padding: 4rem; background: linear-gradient(90deg, rgba(20,20,20,0.8), transparent);
 }
 
-.modal-title { 
-  font-family: 'Cinzel', serif; color: var(--gold); font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 3rem; 
-}
+.modal-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 3rem; }
 
 #wish-input {
   background: transparent; border: none; border-bottom: 1px solid #444;
@@ -88,4 +69,9 @@ body {
 #wish-submit {
   background: transparent; border: 1px solid var(--gold); color: var(--gold);
   padding: 15px 50px; font-family: 'Cinzel', serif; letter-spacing: 3px; cursor: pointer;
-  transition:
+  transition: all 0.5s ease; text-transform: uppercase; font-size: 0.8rem;
+}
+#wish-submit:hover { background: var(--gold); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
+#close-modal { position: absolute; top: 40px; right: 40px; color: #444; cursor: pointer; font-size: 1.2rem; }
+#close-modal:hover { color: #fff; }
+.hidden { display: none !important; }
