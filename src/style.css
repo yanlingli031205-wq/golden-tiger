@@ -1,60 +1,91 @@
-/* 引入：
-   1. Cinzel: 英文奢华衬线体
-   2. Ma Shan Zheng: 中文霸气毛笔书法体
-*/
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Ma+Shan+Zheng&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&display=swap');
 
 :root {
-  --gold: #FFD700;
-  --fire: #FF4500;
-  --black: #050505;
+  --gold: #F0E68C; /* 香槟金 */
+  --gold-highlight: #FFFACD;
+  --black: #000000;
 }
 
 body {
   margin: 0; padding: 0; width: 100vw; height: 100vh;
   overflow: hidden; background-color: var(--black);
-  font-family: 'Cinzel', serif; /* 默认英文 */
+  font-family: 'Cinzel', serif;
 }
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-/* 许愿弹窗样式 (保持原有高级感) */
+/* --- 电影感排版 (Cinematic Layout) --- */
+#ui-layer {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 10;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; /* 右对齐 */
+  padding-right: 10%; /* 右侧留白 */
+  box-sizing: border-box;
+}
+
+.title-en {
+  font-size: min(4rem, 6vw);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: transparent;
+  background: linear-gradient(to right, var(--gold-highlight), var(--gold), #8B7500);
+  -webkit-background-clip: text;
+  background-clip: text;
+  margin: 0;
+  opacity: 0; /* 初始隐藏 */
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.2));
+  transform: translateX(50px);
+}
+
+.title-cn {
+  font-family: 'Noto Serif SC', serif;
+  font-size: min(1.5rem, 2.5vw);
+  font-weight: 300;
+  letter-spacing: 1.2em; /* 极宽字间距 */
+  color: #888; /* 银灰色，低调 */
+  margin-top: 20px;
+  border-top: 1px solid #333; /* 装饰线 */
+  padding-top: 20px;
+  opacity: 0;
+  transform: translateX(50px);
+}
+
+/* 交互提示 */
+.hint {
+  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+  color: #444; font-size: 0.8rem; letter-spacing: 0.5em; text-transform: uppercase;
+  opacity: 0;
+}
+
+/* --- 许愿弹窗 (极简黑金) --- */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px);
   z-index: 100; display: flex; justify-content: center; align-items: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+  opacity: 0; pointer-events: none; transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #wish-modal.visible { opacity: 1; pointer-events: auto; }
 
 .modal-content {
-  background: linear-gradient(135deg, #1a0505 0%, #000000 100%);
-  border: 1px solid var(--fire); /* 改为火红色边框 */
-  padding: 4rem; text-align: center;
-  box-shadow: 0 0 50px rgba(255, 69, 0, 0.3);
-  transform: scale(0.9); transition: transform 0.4s ease;
+  width: 100%; max-width: 500px;
+  text-align: center; border-left: 2px solid var(--gold);
+  padding: 4rem;
+  background: linear-gradient(90deg, rgba(20,20,20,0.8), transparent);
 }
-#wish-modal.visible .modal-content { transform: scale(1); }
 
 .modal-title { 
-  font-family: 'Ma Shan Zheng', cursive; /* 中文标题用毛笔字 */
-  color: var(--gold); font-size: 3rem; margin-bottom: 2rem; 
-  text-shadow: 0 0 10px var(--fire);
+  font-family: 'Cinzel', serif; color: var(--gold); font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 3rem; 
 }
 
 #wish-input {
-  background: transparent; border: none; border-bottom: 2px solid #666;
-  color: #fff; font-family: 'Ma Shan Zheng', cursive; font-size: 2rem;
-  text-align: center; width: 100%; max-width: 400px; padding: 10px; margin-bottom: 2rem;
-  outline: none;
+  background: transparent; border: none; border-bottom: 1px solid #444;
+  color: #fff; font-family: 'Noto Serif SC', serif; font-size: 1.5rem;
+  text-align: center; width: 100%; padding: 15px; margin-bottom: 3rem; outline: none;
+  transition: border-color 0.5s;
 }
-#wish-input:focus { border-bottom: 2px solid var(--fire); }
+#wish-input:focus { border-bottom: 1px solid var(--gold); }
 
 #wish-submit {
   background: transparent; border: 1px solid var(--gold); color: var(--gold);
-  padding: 10px 40px; font-family: 'Cinzel', serif; cursor: pointer; transition: 0.3s;
-  font-weight: bold; letter-spacing: 2px;
-}
-#wish-submit:hover { background: var(--gold); color: #000; box-shadow: 0 0 20px var(--gold); }
-#close-modal { position: absolute; top: 15px; right: 20px; color: #666; font-size: 2rem; cursor: pointer; }
-.hidden { display: none !important; }
+  padding: 15px 50px; font-family: 'Cinzel', serif; letter-spacing: 3px; cursor: pointer;
+  transition:
