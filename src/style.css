@@ -1,8 +1,7 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
-  --gold: #F0E68C;
-  --gold-light: #FFFACD;
+  --gold: #FFAA00; /* 改为暖橙金 */
   --black: #050505;
 }
 
@@ -14,37 +13,41 @@ body {
 
 #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-/* UI 布局 - 已修改 */
+/* UI 布局 */
 #ui-layer {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 10;
-  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; 
-  /* 【关键修改】padding-right 从 10% 改为 25%，整体往左移 */
-  padding-right: 25%;
+  display: flex; flex-direction: column; justify-content: center; 
+  align-items: flex-end; /* 保持右对齐 */
+  
+  /* 【重点修改】这里改为 40%，文字会离右边框很远，看起来就像往左移了 */
+  padding-right: 40%; 
+  
   transition: opacity 1s ease;
 }
 
 .title-en {
-  font-size: min(3rem, 5vw); font-weight: 700; letter-spacing: 0.2em;
-  background: linear-gradient(to right, #fff, var(--gold));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  margin: 0; text-shadow: 0 0 20px rgba(240, 230, 140, 0.5);
+  font-size: min(3rem, 5vw); font-weight: 700; letter-spacing: 0.1em;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.8); /* 暖光阴影 */
+  margin: 0; 
 }
 
 .title-cn {
   font-family: 'Ma Shan Zheng', cursive; 
   font-size: min(4rem, 6vw); color: var(--gold);
   margin-top: 10px; margin-bottom: 0;
-  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  text-shadow: 0 0 20px rgba(255, 69, 0, 0.6); /* 红橙色光晕 */
 }
 
 .hint {
   margin-top: 40px; font-size: 0.8rem; color: #888; letter-spacing: 0.3em;
 }
 
+/* 弹窗保持不变 */
 #wish-modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px);
+  background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
   z-index: 100; display: flex; justify-content: center; align-items: center;
   opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
 }
@@ -52,25 +55,25 @@ body {
 
 .modal-content {
   width: 100%; max-width: 450px; text-align: center;
-  border: 1px solid var(--gold); padding: 3rem;
-  background: radial-gradient(circle, rgba(20,20,20,0.9) 0%, rgba(0,0,0,1) 100%);
-  box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+  border: 2px solid var(--gold); padding: 3rem;
+  background: #111;
+  box-shadow: 0 0 60px rgba(255, 170, 0, 0.2);
 }
 
 .modal-title { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 2rem; letter-spacing: 0.2em; }
 
 #wish-input {
-  background: transparent; border: none; border-bottom: 1px solid #555;
+  background: transparent; border: none; border-bottom: 2px solid #555;
   color: #fff; font-family: 'Ma Shan Zheng', cursive; font-size: 2rem;
   text-align: center; width: 100%; padding: 10px; margin-bottom: 2rem; outline: none;
 }
-#wish-input:focus { border-bottom: 1px solid var(--gold); }
+#wish-input:focus { border-bottom: 2px solid var(--gold); }
 
 #wish-submit {
   background: var(--gold); color: #000; border: none;
-  padding: 12px 40px; font-family: 'Cinzel', serif; letter-spacing: 2px;
+  padding: 12px 40px; font-family: 'Cinzel', serif; letter-spacing: 2px; font-weight: bold;
   cursor: pointer; transition: 0.3s;
 }
-#wish-submit:hover { background: #fff; box-shadow: 0 0 20px #fff; }
+#wish-submit:hover { background: #fff; box-shadow: 0 0 30px #FFAA00; }
 #close-modal { position: absolute; top: 30px; right: 30px; color: #666; cursor: pointer; font-size: 1.5rem; }
 .hidden { display: none !important; }
